@@ -1,72 +1,616 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Peta Persebaran Pelaku Usaha | Data Pengawasan PSDKP</title>
+
+<!-- Leaflet -->
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+<!-- Marker Cluster -->
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+/>
+
+<link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+/>
+
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    height: 75px;
+    background: linear-gradient(135deg, #0f766e, #0e7490);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    position: relative;
+    z-index: 1000;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo {
+    width: 48px;
+    height: 48px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 27px;
+}
+
+.header-title {
+    display: flex;
+    flex-direction: column;
+}
+
+.header-title strong {
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.header-title span {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 3px;
+}
+
+.status {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.main {
+    display: flex;
+    height: calc(100vh - 75px);
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+    width: 350px;
+    min-width: 350px;
+    background: white;
+    padding: 22px;
+    overflow-y: auto;
+    box-shadow: 3px 0 10px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 900;
+}
+
+.sidebar-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f766e;
+    margin-bottom: 5px;
+}
+
+.sidebar-subtitle {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+/* =========================
+   STATISTICS
+========================= */
+
+.stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #f0fdfa, #ecfeff);
+    border: 1px solid #ccfbf1;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f766e;
+}
+
+/* =========================
+   FILTER
+========================= */
+
+.filter-group {
+    margin-bottom: 17px;
+}
+
+.filter-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 7px;
+}
+
+.search-input,
+.filter-select {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 9px;
+    padding: 11px 12px;
+    font-size: 13px;
+    outline: none;
+    background: white;
+    color: #334155;
+}
+
+.search-input:focus,
+.filter-select:focus {
+    border-color: #0f766e;
+    box-shadow: 0 0 0 3px rgba(15,118,110,0.1);
+}
+
+/* =========================
+   LEGEND
+========================= */
+
+.legend {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.legend-title {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 12px;
+    color: #475569;
+}
+
+.legend-circle {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #0f766e;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #0f766e;
+}
+
+/* =========================
+   INSTRUCTION
+========================= */
+
+.instructions {
+    margin-top: 15px;
+    padding: 14px;
+    background: #ecfeff;
+    border-left: 4px solid #0e7490;
+    border-radius: 7px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #475569;
+}
+
+/* =========================
+   MAP
+========================= */
+
+.map-container {
+    flex: 1;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.loading {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 11px 18px;
+    border-radius: 25px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.18);
+    font-size: 13px;
+    color: #0f766e;
+    font-weight: 600;
+    z-index: 1000;
+}
+
+/* =========================
+   POPUP
+========================= */
+
+.popup-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f766e;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+.popup-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.popup-table tr {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.popup-table td {
+    padding: 6px 4px;
+    vertical-align: top;
+}
+
+.popup-table td:first-child {
+    width: 40%;
+    color: #64748b;
+    font-weight: 600;
+}
+
+.popup-table td:last-child {
+    color: #334155;
+}
+
+.maps-button {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    background: #0f766e;
+    color: white !important;
+    padding: 9px 12px;
+    border-radius: 7px;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.maps-button:hover {
+    background: #115e59;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 800px) {
+
+    .header {
+        padding: 0 15px;
+    }
+
+    .header-title strong {
+        font-size: 17px;
+    }
+
+    .header-title span {
+        font-size: 11px;
+    }
+
+    .status {
+        display: none;
+    }
+
+    .main {
+        flex-direction: column;
+        height: calc(100vh - 75px);
+    }
+
+    .sidebar {
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        max-height: 42vh;
+    }
+
+    .map-container {
+        height: 58vh;
+    }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- =========================
+     HEADER
+========================= -->
+
+<header class="header">
+
+    <div class="header-left">
+
+        <div class="logo">
+            🌊
+        </div>
+
+        <div class="header-title">
+            <strong>Peta Persebaran Pelaku Usaha</strong>
+            <span>Data Pengawasan PSDKP</span>
+        </div>
+
+    </div>
+
+    <div class="status" id="status">
+        Memuat data...
+    </div>
+
+</header>
+
+
+<!-- =========================
+     MAIN
+========================= -->
+
+<div class="main">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-title">
+            Persebaran Lokasi
+        </div>
+
+        <div class="sidebar-subtitle">
+            Peta interaktif lokasi pelaku usaha berdasarkan data Excel PSDKP.
+            Klik titik pada peta untuk melihat informasi detail.
+        </div>
+
+
+        <!-- STATISTICS -->
+
+        <div class="stats">
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    TOTAL LOKASI
+                </div>
+
+                <div class="stat-value" id="totalData">
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="stat-card">
+
+                <div class="stat-label">
+                    TOTAL UPT
+                </div>
+
+                <div class="stat-value" id="totalUPT">
+                    -
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- SEARCH -->
+
+        <div class="filter-group">
+
+            <label class="filter-label">
+                Cari Pelaku Usaha / Lokasi
+            </label>
+
+            <input
+                type="text"
+                id="search"
+                class="search-input"
+                placeholder="Ketik nama usaha, lokasi..."
+            >
+
+        </div>
+
+
+        <!-- UPT FILTER -->
+
+        <div class="filter-group">
+
+            <label class="filter-label">
+                Filter UPT PSDKP
+            </label>
+
+            <select
+                id="uptFilter"
+                class="filter-select"
+            >
+
+                <option value="">
+                    Semua UPT
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- LEGEND -->
+
+        <div class="legend">
+
+            <div class="legend-title">
+                Legenda
+            </div>
+
+            <div class="legend-item">
+
+                <span class="legend-circle"></span>
+
+                <span>
+                    Lokasi Pelaku Usaha
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- INSTRUCTIONS -->
+
+        <div class="instructions">
+
+            <strong>Petunjuk:</strong>
+
+            <br>
+
+            • Klik titik untuk melihat detail data.
+
+            <br>
+
+            • Gunakan pencarian untuk menemukan pelaku usaha.
+
+            <br>
+
+            • Gunakan filter UPT untuk menyaring lokasi.
+
+            <br>
+
+            • Tombol Google Maps tersedia pada setiap detail lokasi.
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAP -->
+
+    <main class="map-container">
+
+        <div
+            class="loading"
+            id="loading"
+        >
+            Memuat data Excel...
+        </div>
+
+        <div id="map"></div>
+
+    </main>
+
+</div>
+
+
+<!-- =========================
+     LEAFLET
+========================= -->
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+
 <script>
 
-/* ============================================================
-   KONFIGURASI
-============================================================ */
+/* =========================================================
+   FILE EXCEL
+========================================================= */
 
 const EXCEL_FILE =
     "DATA PENGAWASAN DIT. PSDK (only long lat).xlsx";
+
+
+/* =========================================================
+   GLOBAL DATA
+========================================================= */
 
 let allData = [];
 let validData = [];
 let markerLayer;
 
 
-/* ============================================================
-   NAMA KOLOM EXCEL
-============================================================ */
-
-const COL = {
-
-    no:
-        "NO.",
-
-    usaha:
-        "PELAKU USAHA",
-
-    lokasi:
-        "LOKASI",
-
-    pelanggaran:
-        "INDIKASI   PELANGGARAN",
-
-    upt:
-        "UPT PSDKP",
-
-    longitude:
-        "LONG (decimal)",
-
-    latitude:
-        "LAT (decimal)",
-
-    tl:
-        "TL PENGAWASAN",
-
-    kegiatan:
-        "BENTUK KEGIATAN"
-
-};
-
-
-/* ============================================================
-   INITIAL MAP
-============================================================ */
+/* =========================================================
+   PETA
+========================================================= */
 
 const map = L.map("map", {
     zoomControl: true
 });
 
 
-/* ============================================================
+/* =========================================================
    BASEMAP
-============================================================ */
+========================================================= */
 
 const osm = L.tileLayer(
     "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     {
         maxZoom: 19,
-        attribution:
-            "&copy; OpenStreetMap contributors"
+        attribution: "&copy; OpenStreetMap contributors"
     }
 ).addTo(map);
 
@@ -75,8 +619,7 @@ const satellite = L.tileLayer(
     "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     {
         maxZoom: 19,
-        attribution:
-            "Tiles &copy; Esri"
+        attribution: "Tiles &copy; Esri"
     }
 );
 
@@ -85,8 +628,7 @@ const light = L.tileLayer(
     "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     {
         maxZoom: 20,
-        attribution:
-            "&copy; CARTO"
+        attribution: "&copy; CARTO"
     }
 );
 
@@ -100,30 +642,53 @@ L.control.layers(
 ).addTo(map);
 
 
-/* Tampilan awal Indonesia */
-
 map.setView(
     [-2.5, 118],
     5
 );
 
 
-/* ============================================================
+/* =========================================================
+   NORMALISASI HEADER EXCEL
+========================================================= */
+
+function normalizeHeader(value) {
+
+    return String(value ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHTML(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+}
+
+
+/* =========================================================
    LOAD EXCEL
-============================================================ */
+========================================================= */
 
 async function loadExcel() {
 
-    document
-        .getElementById("loading")
-        .style.display = "block";
-
+    document.getElementById("loading").style.display = "block";
 
     try {
 
-        const response =
-            await fetch(EXCEL_FILE);
-
+        const response = await fetch(EXCEL_FILE);
 
         if (!response.ok) {
 
@@ -148,16 +713,25 @@ async function loadExcel() {
 
 
         console.log(
-            "Sheet Excel:",
+            "Daftar sheet:",
             workbook.SheetNames
         );
 
 
+        if (
+            !workbook.SheetNames ||
+            workbook.SheetNames.length === 0
+        ) {
+
+            throw new Error(
+                "Workbook tidak memiliki sheet."
+            );
+
+        }
+
+
         /*
-         * Ambil sheet pertama.
-         *
-         * Kalau Excel hanya memiliki
-         * satu sheet, langsung digunakan.
+         * Menggunakan sheet pertama
          */
 
         const sheetName =
@@ -189,13 +763,7 @@ async function loadExcel() {
         );
 
 
-        /*
-         * Cek struktur kolom
-         */
-
-        if (
-            allData.length === 0
-        ) {
+        if (allData.length === 0) {
 
             throw new Error(
                 "Excel tidak memiliki data."
@@ -214,7 +782,7 @@ async function loadExcel() {
 
     }
 
-    catch(error) {
+    catch (error) {
 
         console.error(
             "ERROR:",
@@ -222,10 +790,8 @@ async function loadExcel() {
         );
 
 
-        document
-            .getElementById("status")
-            .innerText =
-                "Gagal memuat data";
+        document.getElementById("status").innerText =
+            "Gagal memuat data";
 
 
         alert(
@@ -239,59 +805,142 @@ async function loadExcel() {
 
     finally {
 
-        document
-            .getElementById("loading")
-            .style.display = "none";
+        document.getElementById("loading").style.display =
+            "none";
 
     }
 
 }
 
 
-/* ============================================================
-   PROCESS DATA
-============================================================ */
+/* =========================================================
+   PROSES DATA
+========================================================= */
 
 function processData() {
 
-
     /*
-     * Pastikan kolom utama tersedia
+     * Membuat mapping header secara fleksibel.
+     *
+     * Jadi misalnya Excel mempunyai:
+     *
+     * INDIKASI   PELANGGARAN
+     *
+     * atau
+     *
+     * INDIKASI PELANGGARAN
+     *
+     * tetap akan terbaca.
      */
 
-    const requiredColumns = [
-
-        COL.no,
-        COL.usaha,
-        COL.lokasi,
-        COL.pelanggaran,
-        COL.upt,
-        COL.longitude,
-        COL.latitude,
-        COL.tl,
-        COL.kegiatan
-
-    ];
-
-
     const actualColumns =
-        Object.keys(
-            allData[0]
-        );
+        Object.keys(allData[0]);
 
 
-    const missingColumns =
-        requiredColumns.filter(
-            column =>
-                !actualColumns.includes(
-                    column
-                )
-        );
+    const normalizedColumns = {};
 
 
-    if (
-        missingColumns.length > 0
-    ) {
+    actualColumns.forEach(column => {
+
+        normalizedColumns[
+            normalizeHeader(column)
+        ] = column;
+
+    });
+
+
+    const COL = {
+
+        no:
+            normalizedColumns["no."],
+
+        usaha:
+            normalizedColumns["pelaku usaha"],
+
+        lokasi:
+            normalizedColumns["lokasi"],
+
+        pelanggaran:
+            normalizedColumns[
+                "indikasi pelanggaran"
+            ],
+
+        upt:
+            normalizedColumns["upt psdkp"],
+
+        longitude:
+            normalizedColumns[
+                "long (decimal)"
+            ],
+
+        latitude:
+            normalizedColumns[
+                "lat (decimal)"
+            ],
+
+        tl:
+            normalizedColumns[
+                "tl pengawasan"
+            ],
+
+        kegiatan:
+            normalizedColumns[
+                "bentuk kegiatan"
+            ]
+
+    };
+
+
+    console.log(
+        "Mapping kolom:",
+        COL
+    );
+
+
+    /*
+     * Cek kolom
+     */
+
+    const requiredColumns = {
+
+        "NO.": COL.no,
+
+        "PELAKU USAHA": COL.usaha,
+
+        "LOKASI": COL.lokasi,
+
+        "INDIKASI PELANGGARAN":
+            COL.pelanggaran,
+
+        "UPT PSDKP": COL.upt,
+
+        "LONG (decimal)": COL.longitude,
+
+        "LAT (decimal)": COL.latitude,
+
+        "TL PENGAWASAN": COL.tl,
+
+        "BENTUK KEGIATAN": COL.kegiatan
+
+    };
+
+
+    const missingColumns = [];
+
+
+    Object.entries(requiredColumns)
+        .forEach(([label, column]) => {
+
+            if (!column) {
+
+                missingColumns.push(label);
+
+            }
+
+        });
+
+
+    if (missingColumns.length > 0) {
 
         console.error(
             "Kolom tidak ditemukan:",
@@ -302,9 +951,10 @@ function processData() {
         alert(
             "Ada kolom Excel yang tidak ditemukan:\n\n" +
             missingColumns.join("\n") +
-            "\n\nLihat Console Browser (F12) untuk daftar kolom yang terbaca."
+            "\n\nKolom yang terbaca:\n" +
+            actualColumns.join("\n") +
+            "\n\nSilakan buka Console Browser (F12) untuk melihat detail."
         );
-
 
         return;
 
@@ -312,133 +962,94 @@ function processData() {
 
 
     /*
-     * Konversi koordinat
+     * Filter data yang mempunyai koordinat valid
      */
 
     validData =
-        allData.filter(
-            row => {
+        allData.filter(row => {
 
-                const longitude =
-                    parseFloat(
-                        String(
-                            row[
-                                COL.longitude
-                            ]
-                        )
-                        .replace(",", ".")
-                    );
-
-
-                const latitude =
-                    parseFloat(
-                        String(
-                            row[
-                                COL.latitude
-                            ]
-                        )
-                        .replace(",", ".")
-                    );
-
-
-                return (
-
-                    Number.isFinite(
-                        longitude
+            const longitude =
+                parseFloat(
+                    String(
+                        row[COL.longitude]
                     )
-
-                    &&
-
-                    Number.isFinite(
-                        latitude
-                    )
-
-                    &&
-
-                    latitude >= -90
-
-                    &&
-
-                    latitude <= 90
-
-                    &&
-
-                    longitude >= -180
-
-                    &&
-
-                    longitude <= 180
-
+                    .replace(",", ".")
                 );
 
-            }
-        );
+
+            const latitude =
+                parseFloat(
+                    String(
+                        row[COL.latitude]
+                    )
+                    .replace(",", ".")
+                );
+
+
+            return (
+
+                Number.isFinite(longitude) &&
+
+                Number.isFinite(latitude) &&
+
+                latitude >= -90 &&
+
+                latitude <= 90 &&
+
+                longitude >= -180 &&
+
+                longitude <= 180
+
+            );
+
+        });
 
 
     console.log(
-        "Total data:",
-        allData.length
-    );
-
-
-    console.log(
-        "Data dengan koordinat:",
-        validData.length
-    );
-
-
-    console.log(
-        "Data tanpa koordinat:",
-        allData.length -
+        "Data dengan koordinat valid:",
         validData.length
     );
 
 
     /*
-     * Statistik total lokasi
+     * Total lokasi
      */
 
-    document
-        .getElementById("totalData")
-        .innerText =
-            validData.length;
+    document.getElementById(
+        "totalData"
+    ).innerText =
+        validData.length;
 
 
     /*
-     * Hitung jumlah UPT unik
+     * Total UPT
      */
 
     const uptSet =
         new Set();
 
 
-    validData.forEach(
-        row => {
+    validData.forEach(row => {
 
-            const upt =
-                String(
-                    row[
-                        COL.upt
-                    ] || ""
-                ).trim();
+        const upt =
+            String(
+                row[COL.upt] || ""
+            ).trim();
 
 
-            if (upt) {
+        if (upt) {
 
-                uptSet.add(
-                    upt
-                );
-
-            }
+            uptSet.add(upt);
 
         }
-    );
+
+    });
 
 
-    document
-        .getElementById("totalUPT")
-        .innerText =
-            uptSet.size;
+    document.getElementById(
+        "totalUPT"
+    ).innerText =
+        uptSet.size;
 
 
     /*
@@ -451,35 +1062,41 @@ function processData() {
         );
 
 
+    uptFilter.innerHTML =
+        '<option value="">Semua UPT</option>';
+
+
     [...uptSet]
         .sort()
-        .forEach(
-            upt => {
+        .forEach(upt => {
 
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-
-                option.value =
-                    upt;
-
-
-                option.textContent =
-                    upt;
-
-
-                uptFilter.appendChild(
-                    option
+            const option =
+                document.createElement(
+                    "option"
                 );
 
-            }
-        );
+
+            option.value = upt;
+
+            option.textContent = upt;
+
+
+            uptFilter.appendChild(
+                option
+            );
+
+        });
 
 
     /*
-     * Render marker
+     * Simpan mapping kolom
+     */
+
+    window.EXCEL_COL = COL;
+
+
+    /*
+     * Tampilkan marker
      */
 
     renderMarkers(
@@ -487,29 +1104,22 @@ function processData() {
     );
 
 
-    /*
-     * Status header
-     */
-
-    document
-        .getElementById("status")
-        .innerText =
-            `${validData.length} lokasi ditemukan`;
+    document.getElementById(
+        "status"
+    ).innerText =
+        `${validData.length} lokasi ditemukan`;
 
 }
 
 
-/* ============================================================
-   RENDER MARKERS
-============================================================ */
+/* =========================================================
+   RENDER MARKER
+========================================================= */
 
-function renderMarkers(
-    data
-) {
-
+function renderMarkers(data) {
 
     /*
-     * Hapus marker lama
+     * Hapus layer lama
      */
 
     if (markerLayer) {
@@ -522,17 +1132,15 @@ function renderMarkers(
 
 
     /*
-     * Marker cluster
+     * Marker Cluster
      */
 
     markerLayer =
         L.markerClusterGroup({
 
-            showCoverageOnHover:
-                false,
+            showCoverageOnHover: false,
 
-            maxClusterRadius:
-                45
+            maxClusterRadius: 45
 
         });
 
@@ -541,339 +1149,304 @@ function renderMarkers(
 
 
     /*
-     * Buat marker setiap baris
+     * Loop data
      */
 
-    data.forEach(
-        row => {
+    data.forEach(row => {
 
-
-            const longitude =
-                parseFloat(
-                    String(
-                        row[
-                            COL.longitude
-                        ]
-                    )
-                    .replace(",", ".")
-                );
-
-
-            const latitude =
-                parseFloat(
-                    String(
-                        row[
-                            COL.latitude
-                        ]
-                    )
-                    .replace(",", ".")
-                );
-
-
-            if (
-                !Number.isFinite(
-                    latitude
+        const longitude =
+            parseFloat(
+                String(
+                    row[
+                        window.EXCEL_COL.longitude
+                    ]
                 )
-                ||
-                !Number.isFinite(
+                .replace(",", ".")
+            );
+
+
+        const latitude =
+            parseFloat(
+                String(
+                    row[
+                        window.EXCEL_COL.latitude
+                    ]
+                )
+                .replace(",", ".")
+            );
+
+
+        if (
+
+            !Number.isFinite(latitude) ||
+
+            !Number.isFinite(longitude)
+
+        ) {
+
+            return;
+
+        }
+
+
+        bounds.push([
+            latitude,
+            longitude
+        ]);
+
+
+        /*
+         * Ambil data Excel
+         */
+
+        const no =
+            row[
+                window.EXCEL_COL.no
+            ] || "-";
+
+
+        const usaha =
+            row[
+                window.EXCEL_COL.usaha
+            ] || "Tidak ada nama";
+
+
+        const lokasi =
+            row[
+                window.EXCEL_COL.lokasi
+            ] || "-";
+
+
+        const pelanggaran =
+            row[
+                window.EXCEL_COL.pelanggaran
+            ] || "-";
+
+
+        const upt =
+            row[
+                window.EXCEL_COL.upt
+            ] || "-";
+
+
+        const tl =
+            row[
+                window.EXCEL_COL.tl
+            ] || "-";
+
+
+        const kegiatan =
+            row[
+                window.EXCEL_COL.kegiatan
+            ] || "-";
+
+
+        /*
+         * Marker
+         */
+
+        const marker =
+            L.circleMarker(
+                [
+                    latitude,
                     longitude
-                )
-            ) {
+                ],
+                {
 
-                return;
+                    radius: 8,
 
-            }
+                    fillColor: "#0f766e",
 
+                    color: "#ffffff",
 
-            bounds.push([
-                latitude,
-                longitude
-            ]);
+                    weight: 2,
 
+                    opacity: 1,
 
-            /*
-             * Data Excel
-             */
+                    fillOpacity: 0.9
 
-            const no =
-                row[
-                    COL.no
-                ] || "-";
+                }
+            );
 
 
-            const usaha =
-                row[
-                    COL.usaha
-                ] || "Tidak ada nama";
+        /*
+         * Google Maps
+         *
+         * Tidak membutuhkan API.
+         */
 
+        const googleMapsURL =
+            "https://www.google.com/maps/search/?api=1&query=" +
+            latitude +
+            "," +
+            longitude;
 
-            const lokasi =
-                row[
-                    COL.lokasi
-                ] || "-";
 
+        /*
+         * Popup
+         */
 
-            const pelanggaran =
-                row[
-                    COL.pelanggaran
-                ] || "-";
+        const popupHTML = `
 
+            <div style="
+                min-width:320px;
+                max-width:380px;
+            ">
 
-            const upt =
-                row[
-                    COL.upt
-                ] || "-";
+                <div class="popup-title">
 
-
-            const tl =
-                row[
-                    COL.tl
-                ] || "-";
-
-
-            const kegiatan =
-                row[
-                    COL.kegiatan
-                ] || "-";
-
-
-            /*
-             * Marker
-             */
-
-            const marker =
-                L.circleMarker(
-                    [
-                        latitude,
-                        longitude
-                    ],
-                    {
-
-                        radius: 8,
-
-                        fillColor:
-                            "#0f766e",
-
-                        color:
-                            "#ffffff",
-
-                        weight: 2,
-
-                        opacity: 1,
-
-                        fillOpacity:
-                            0.9
-
-                    }
-                );
-
-
-            /*
-             * Google Maps
-             */
-
-            const googleMapsURL =
-                "https://www.google.com/maps/search/?api=1&query=" +
-                latitude +
-                "," +
-                longitude;
-
-
-            /*
-             * Popup
-             */
-
-            const popupHTML = `
-
-                <div
-                    style="
-                        min-width:320px;
-                        max-width:380px;
-                    "
-                >
-
-                    <div
-                        class="popup-title"
-                    >
-
-                        ${escapeHTML(
-                            usaha
-                        )}
-
-                    </div>
-
-
-                    <table
-                        class="popup-table"
-                    >
-
-
-                        <tr>
-
-                            <td>
-                                No.
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    no
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                Pelaku Usaha
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    usaha
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                Lokasi
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    lokasi
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                Indikasi Pelanggaran
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    pelanggaran
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                UPT PSDKP
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    upt
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                TL Pengawasan
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    tl
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                Bentuk Kegiatan
-                            </td>
-
-                            <td>
-                                ${escapeHTML(
-                                    kegiatan
-                                )}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                Longitude
-                            </td>
-
-                            <td>
-                                ${longitude.toFixed(6)}
-                            </td>
-
-                        </tr>
-
-
-                        <tr>
-
-                            <td>
-                                Latitude
-                            </td>
-
-                            <td>
-                                ${latitude.toFixed(6)}
-                            </td>
-
-                        </tr>
-
-
-                    </table>
-
-
-                    <a
-                        class="maps-button"
-                        href="${googleMapsURL}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-
-                        📍 Buka di Google Maps
-
-                    </a>
-
+                    ${escapeHTML(usaha)}
 
                 </div>
 
-            `;
+
+                <table class="popup-table">
+
+                    <tr>
+
+                        <td>No.</td>
+
+                        <td>
+                            ${escapeHTML(no)}
+                        </td>
+
+                    </tr>
 
 
-            marker.bindPopup(
-                popupHTML
-            );
+                    <tr>
+
+                        <td>Pelaku Usaha</td>
+
+                        <td>
+                            ${escapeHTML(usaha)}
+                        </td>
+
+                    </tr>
 
 
-            markerLayer.addLayer(
-                marker
-            );
+                    <tr>
 
-        }
-    );
+                        <td>Lokasi</td>
+
+                        <td>
+                            ${escapeHTML(lokasi)}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>Indikasi Pelanggaran</td>
+
+                        <td>
+                            ${escapeHTML(pelanggaran)}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>UPT PSDKP</td>
+
+                        <td>
+                            ${escapeHTML(upt)}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>TL Pengawasan</td>
+
+                        <td>
+                            ${escapeHTML(tl)}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>Bentuk Kegiatan</td>
+
+                        <td>
+                            ${escapeHTML(kegiatan)}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>Longitude</td>
+
+                        <td>
+                            ${longitude.toFixed(6)}
+                        </td>
+
+                    </tr>
+
+
+                    <tr>
+
+                        <td>Latitude</td>
+
+                        <td>
+                            ${latitude.toFixed(6)}
+                        </td>
+
+                    </tr>
+
+                </table>
+
+
+                <a
+
+                    class="maps-button"
+
+                    href="${googleMapsURL}"
+
+                    target="_blank"
+
+                    rel="noopener noreferrer"
+
+                >
+
+                    📍 Buka di Google Maps
+
+                </a>
+
+            </div>
+
+        `;
+
+
+        /*
+         * Pasang popup
+         */
+
+        marker.bindPopup(
+            popupHTML
+        );
+
+
+        /*
+         * Masukkan marker
+         * ke cluster
+         */
+
+        markerLayer.addLayer(
+            marker
+        );
+
+    });
 
 
     /*
-     * Tambahkan marker ke peta
+     * Tambahkan ke peta
      */
 
     map.addLayer(
@@ -882,12 +1455,10 @@ function renderMarkers(
 
 
     /*
-     * Zoom otomatis ke semua titik
+     * Zoom ke seluruh titik
      */
 
-    if (
-        bounds.length > 0
-    ) {
+    if (bounds.length > 0) {
 
         map.fitBounds(
             bounds,
@@ -904,141 +1475,115 @@ function renderMarkers(
 }
 
 
-/* ============================================================
-   SEARCH + FILTER
-============================================================ */
+/* =========================================================
+   FILTER
+========================================================= */
 
 function applyFilter() {
 
-
     const search =
-        document
-            .getElementById(
-                "search"
-            )
-            .value
-            .toLowerCase()
-            .trim();
+        document.getElementById(
+            "search"
+        )
+        .value
+        .toLowerCase()
+        .trim();
 
 
     const upt =
-        document
-            .getElementById(
-                "uptFilter"
-            )
-            .value
-            .toLowerCase()
-            .trim();
+        document.getElementById(
+            "uptFilter"
+        )
+        .value
+        .toLowerCase()
+        .trim();
 
 
     const filtered =
-        validData.filter(
-            row => {
+        validData.filter(row => {
+
+            const usaha =
+                String(
+                    row[
+                        window.EXCEL_COL.usaha
+                    ] || ""
+                )
+                .toLowerCase();
 
 
-                /*
-                 * Data pencarian
-                 */
-
-                const usaha =
-                    String(
-                        row[
-                            COL.usaha
-                        ] || ""
-                    )
-                    .toLowerCase();
+            const lokasi =
+                String(
+                    row[
+                        window.EXCEL_COL.lokasi
+                    ] || ""
+                )
+                .toLowerCase();
 
 
-                const lokasi =
-                    String(
-                        row[
-                            COL.lokasi
-                        ] || ""
-                    )
-                    .toLowerCase();
+            const pelanggaran =
+                String(
+                    row[
+                        window.EXCEL_COL.pelanggaran
+                    ] || ""
+                )
+                .toLowerCase();
 
 
-                const pelanggaran =
-                    String(
-                        row[
-                            COL.pelanggaran
-                        ] || ""
-                    )
-                    .toLowerCase();
+            const kegiatan =
+                String(
+                    row[
+                        window.EXCEL_COL.kegiatan
+                    ] || ""
+                )
+                .toLowerCase();
 
 
-                const kegiatan =
-                    String(
-                        row[
-                            COL.kegiatan
-                        ] || ""
-                    )
-                    .toLowerCase();
+            const rowUPT =
+                String(
+                    row[
+                        window.EXCEL_COL.upt
+                    ] || ""
+                )
+                .toLowerCase();
 
 
-                const rowUPT =
-                    String(
-                        row[
-                            COL.upt
-                        ] || ""
-                    )
-                    .toLowerCase();
+            /*
+             * Pencarian
+             */
+
+            const matchSearch =
+
+                !search ||
+
+                usaha.includes(search) ||
+
+                lokasi.includes(search) ||
+
+                pelanggaran.includes(search) ||
+
+                kegiatan.includes(search);
 
 
-                /*
-                 * Search
-                 */
+            /*
+             * Filter UPT
+             */
 
-                const matchSearch =
+            const matchUPT =
 
-                    !search
+                !upt ||
 
-                    ||
-
-                    usaha.includes(
-                        search
-                    )
-
-                    ||
-
-                    lokasi.includes(
-                        search
-                    )
-
-                    ||
-
-                    pelanggaran.includes(
-                        search
-                    )
-
-                    ||
-
-                    kegiatan.includes(
-                        search
-                    );
+                rowUPT === upt;
 
 
-                /*
-                 * Filter UPT
-                 */
+            return (
 
-                const matchUPT =
+                matchSearch &&
 
-                    !upt
+                matchUPT
 
-                    ||
+            );
 
-                    rowUPT === upt;
-
-
-                return (
-                    matchSearch
-                    &&
-                    matchUPT
-                );
-
-            }
-        );
+        });
 
 
     /*
@@ -1054,80 +1599,43 @@ function applyFilter() {
      * Update status
      */
 
-    document
-        .getElementById("status")
-        .innerText =
-            `${filtered.length} lokasi ditampilkan`;
+    document.getElementById(
+        "status"
+    ).innerText =
+        `${filtered.length} lokasi ditampilkan`;
 
 }
 
 
-/* ============================================================
-   SEARCH EVENT
-============================================================ */
+/* =========================================================
+   EVENT FILTER
+========================================================= */
 
-document
-    .getElementById("search")
-    .addEventListener(
-        "input",
-        applyFilter
-    );
-
-
-/* ============================================================
-   FILTER UPT EVENT
-============================================================ */
-
-document
-    .getElementById("uptFilter")
-    .addEventListener(
-        "change",
-        applyFilter
-    );
+document.getElementById(
+    "search"
+)
+.addEventListener(
+    "input",
+    applyFilter
+);
 
 
-/* ============================================================
-   ESCAPE HTML
-============================================================ */
-
-function escapeHTML(
-    value
-) {
-
-    return String(value)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
+document.getElementById(
+    "uptFilter"
+)
+.addEventListener(
+    "change",
+    applyFilter
+);
 
 
-/* ============================================================
-   START
-============================================================ */
+/* =========================================================
+   LOAD DATA
+========================================================= */
 
 loadExcel();
 
 </script>
+
+</body>
+</html>
