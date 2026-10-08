@@ -40,8 +40,32 @@
         #map-container { flex-grow: 1; position: relative; }
         #map { width: 100%; height: 100%; }
         .mobile-toggle { display: none; position: absolute; top: 14px; left: 14px; z-index: 1001; background: #0f172a; color: #38bdf8; border: 1px solid #334155; padding: 10px 14px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .legend-control-wrap {
+            position: relative;
+        }
+        .legend-toggle-btn {
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+            font-size: 16px;
+        }
+        .legend-toggle-btn:hover {
+            background: #1e293b;
+        }
         .legend-panel {
-            background: rgba(15, 23, 42, 0.94);
+            display: none;
+            position: absolute;
+            right: 0;
+            bottom: 50px;
+            background: rgba(15, 23, 42, 0.96);
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #334155;
@@ -49,13 +73,17 @@
             font-size: 0.75rem;
             backdrop-filter: blur(4px);
             width: 285px;
-            max-height: calc(100vh - 105px);
+            max-height: calc(100vh - 150px);
             overflow-y: auto;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.28);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+            z-index: 1000;
+        }
+        .legend-panel.show {
+            display: block;
         }
         .legend-panel::-webkit-scrollbar { width: 5px; }
         .legend-panel::-webkit-scrollbar-thumb { background: #475569; border-radius: 5px; }
-        .leaflet-bottom.leaflet-left { margin-left: 10px; margin-bottom: 10px; }
+        .leaflet-bottom.leaflet-right { margin-right: 10px; margin-bottom: 10px; }
         .leaflet-top.leaflet-right { margin-top: 10px; margin-right: 10px; }
         .leaflet-control-layers {
             max-width: 280px;
@@ -590,11 +618,19 @@
         document.getElementById('sudah-count').textContent = rawData.filter(d => d.status === 'Sudah diawasi').length;
         document.getElementById('belum-count').textContent = rawData.filter(d => d.status === 'Belum diawasi').length;
 
-        // Legend
-        const legend = L.control({ position: 'bottomleft' });
+        // Legend - hidden by default, opened from a small button
+        const legend = L.control({ position: 'bottomright' });
 
         legend.onAdd = function() {
-            const div = L.DomUtil.create('div', 'legend-panel');
+            const wrap = L.DomUtil.create('div', 'legend-control-wrap');
+
+            const button = L.DomUtil.create('button', 'legend-toggle-btn', wrap);
+            button.type = 'button';
+            button.title = 'Tampilkan legenda';
+            button.setAttribute('aria-label', 'Tampilkan legenda');
+            button.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+
+            const div = L.DomUtil.create('div', 'legend-panel', wrap);
 
             const stationNames = [...new Set(
                 rawData
@@ -691,8 +727,18 @@
                 </div>
             `;
 
-            L.DomEvent.disableClickPropagation(div);
-            return div;
+            L.DomEvent.disableClickPropagation(wrap);
+            L.DomEvent.on(button, 'click', function(e) {
+                L.DomEvent.stop(e);
+                const isOpen = div.classList.toggle('show');
+                button.title = isOpen ? 'Sembunyikan legenda' : 'Tampilkan legenda';
+                button.setAttribute('aria-label', button.title);
+                button.innerHTML = isOpen
+                    ? '<i class="fa-solid fa-xmark"></i>'
+                    : '<i class="fa-solid fa-circle-info"></i>';
+            });
+
+            return wrap;
         };
 
         legend.addTo(map);
