@@ -98,9 +98,8 @@
         .legend-subtitle { font-weight: 700; color: #cbd5e1; margin-bottom: 6px; }
         .legend-row { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: #e2e8f0; }
         .legend-symbol { display: inline-block; flex: 0 0 auto; }
-        .point-stasiun, .point-pangkalan { width: 12px; height: 12px; border-radius: 50%; }
-        .point-stasiun { background: #38bdf8; border: 2px solid #34d399; }
-        .point-pangkalan { background: #f59e0b; border: 2px solid #34d399; }
+        .legend-upt-row { margin: 5px 0; }
+        .legend-upt-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; flex: 0 0 12px; }
         .border-sudah, .border-belum { width: 12px; height: 12px; border-radius: 50%; background: transparent; }
         .border-sudah { border: 2px solid #34d399; }
         .border-belum { border: 2px solid #f97316; }
@@ -327,24 +326,44 @@
             return "UPT PSDKP";
         }
 
-        function getUPTStyle(type) {
-            if (type === "Stasiun PSDKP") {
-                return {
-                    color: "#0284c7",
-                    fillColor: "#38bdf8"
-                };
-            }
+        /* =========================================================
+           WARNA TETAP PER UPT
+           Warna yang sama dipakai untuk titik hotspot dan wilayah UPT.
+        ========================================================= */
+        const UPT_FIXED_COLORS = {
+            "STASIUN PSDKP AMBON": "#2563eb",
+            "STASIUN PSDKP BELAWAN": "#16a34a",
+            "STASIUN PSDKP BIAK": "#dc2626",
+            "STASIUN PSDKP CILACAP": "#9333ea",
+            "STASIUN PSDKP KUPANG": "#ea580c",
+            "STASIUN PSDKP PONTIANAK": "#0891b2",
+            "STASIUN PSDKP TAHUNA": "#ca8a04",
+            "STASIUN PSDKP TARAKAN": "#334155",
+            "PANGKALAN PSDKP BATAM": "#4f46e5",
+            "PANGKALAN PSDKP BENOA": "#059669",
+            "PANGKALAN PSDKP BITUNG": "#b91c1c",
+            "PANGKALAN PSDKP JAKARTA": "#7c3aed",
+            "PANGKALAN PSDKP LAMPULO": "#0284c7",
+            "PANGKALAN PSDKP TUAL": "#c2410c"
+        };
 
-            if (type === "Pangkalan PSDKP") {
-                return {
-                    color: "#d97706",
-                    fillColor: "#f59e0b"
-                };
-            }
+        function normalizeUPTExact(value) {
+            return String(value || "")
+                .trim()
+                .replace(/\s+/g, " ")
+                .toUpperCase();
+        }
+
+        function getUPTColor(name) {
+            return UPT_FIXED_COLORS[normalizeUPTExact(name)] || "#64748b";
+        }
+
+        function getUPTStyle(type, name) {
+            const fillColor = getUPTColor(name);
 
             return {
-                color: "#7c3aed",
-                fillColor: "#a78bfa"
+                color: fillColor,
+                fillColor: fillColor
             };
         }
 
@@ -410,7 +429,7 @@
                         style: feature => {
                             const name = getUPTName(feature.properties);
                             const type = getUPTType(name);
-                            const colors = getUPTStyle(type);
+                            const colors = getUPTStyle(type, name);
 
                             return {
                                 color: colors.color,
@@ -514,7 +533,7 @@
                 // Warna titik mengikuti jenis UPT, sedangkan warna garis tepi
                 // tetap menunjukkan status pengawasan.
                 const uptType = getUPTType(item.upt);
-                const uptStyle = getUPTStyle(uptType);
+                const uptStyle = getUPTStyle(uptType, item.upt);
                 const markerColor = uptStyle.fillColor;
                 const statusColor = item.status === 'Sudah diawasi' ? '#34d399' : '#f97316';
 
@@ -604,23 +623,34 @@
 
             const div = L.DomUtil.create('div', 'legend-panel', wrap);
 
-            const stationNames = [...new Set(
-                rawData
-                    .map(d => d.upt)
-                    .filter(Boolean)
-                    .filter(name => /stasiun/i.test(name))
-            )].sort();
+            const stationNames = [
+                "Stasiun PSDKP Ambon",
+                "Stasiun PSDKP Belawan",
+                "Stasiun PSDKP Biak",
+                "Stasiun PSDKP Cilacap",
+                "Stasiun PSDKP Kupang",
+                "Stasiun PSDKP Pontianak",
+                "Stasiun PSDKP Tahuna",
+                "Stasiun PSDKP Tarakan"
+            ];
 
-            const baseNames = [...new Set(
-                rawData
-                    .map(d => d.upt)
-                    .filter(Boolean)
-                    .filter(name => /pangkalan/i.test(name))
-            )].sort();
+            const baseNames = [
+                "Pangkalan PSDKP Batam",
+                "Pangkalan PSDKP Benoa",
+                "Pangkalan PSDKP Bitung",
+                "Pangkalan PSDKP Jakarta",
+                "Pangkalan PSDKP Lampulo",
+                "Pangkalan PSDKP Tual"
+            ];
 
-            const makeList = (items) => items.length
-                ? items.map(name => `<div class="legend-upt-name">${escapeHTML(name)}</div>`).join("")
-                : '<div class="legend-muted">Tidak ada pada data hotspot</div>';
+            const makeUPTList = (items) => items.map(name => {
+                const color = getUPTColor(name);
+                return `
+                    <div class="legend-row legend-upt-row">
+                        <span class="legend-symbol legend-upt-dot" style="background:${color}; border-color:${color};"></span>
+                        <span>${escapeHTML(name)}</span>
+                    </div>`;
+            }).join("");
 
             div.innerHTML = `
                 <div class="legend-title">
@@ -631,16 +661,6 @@
                     <div class="legend-subtitle">Hotspot Pengawasan</div>
 
                     <div class="legend-row">
-                        <span class="legend-symbol point-stasiun"></span>
-                        <span>Titik / warna Stasiun PSDKP</span>
-                    </div>
-
-                    <div class="legend-row">
-                        <span class="legend-symbol point-pangkalan"></span>
-                        <span>Titik / warna Pangkalan PSDKP</span>
-                    </div>
-
-                    <div class="legend-row">
                         <span class="legend-symbol border-sudah"></span>
                         <span>Garis tepi hijau = Sudah diawasi</span>
                     </div>
@@ -649,6 +669,8 @@
                         <span class="legend-symbol border-belum"></span>
                         <span>Garis tepi oranye = Belum diawasi</span>
                     </div>
+
+
                 </div>
 
                 <div class="legend-section">
@@ -659,29 +681,21 @@
                         <span>Garis Pantai Garpan</span>
                     </div>
 
-                    <div class="legend-row">
-                        <span class="legend-symbol polygon-stasiun"></span>
-                        <span>Wilayah Stasiun PSDKP</span>
-                    </div>
 
-                    <div class="legend-row">
-                        <span class="legend-symbol polygon-pangkalan"></span>
-                        <span>Wilayah Pangkalan PSDKP</span>
-                    </div>
                 </div>
 
                 <div class="legend-section">
                     <div class="legend-subtitle">
                         <i class="fa-solid fa-building-flag"></i> Stasiun PSDKP
                     </div>
-                    ${makeList(stationNames)}
+                    ${makeUPTList(stationNames)}
                 </div>
 
                 <div class="legend-section">
                     <div class="legend-subtitle">
                         <i class="fa-solid fa-building"></i> Pangkalan PSDKP
                     </div>
-                    ${makeList(baseNames)}
+                    ${makeUPTList(baseNames)}
                 </div>
 
                 <div class="legend-section">
