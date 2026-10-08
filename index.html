@@ -238,7 +238,6 @@
 
         const garpanGroup = L.layerGroup();
         const uptGroup = L.layerGroup();
-        const uptLabelGroup = L.layerGroup();
 
         function escapeHTML(value) {
             return String(value ?? "")
@@ -349,27 +348,6 @@
             };
         }
 
-        function addUPTLabel(layer, name, type) {
-            const center = layer.getBounds().getCenter();
-
-            const label = L.marker(center, {
-                icon: L.divIcon({
-                    className: "upt-map-label",
-                    html: `
-                        <div class="upt-label ${type === "Stasiun PSDKP" ? "stasiun" : type === "Pangkalan PSDKP" ? "pangkalan" : ""}">
-                            <span class="upt-label-dot"></span>
-                            <span>${escapeHTML(name)}</span>
-                        </div>
-                    `,
-                    iconSize: null,
-                    iconAnchor: [0, 0]
-                }),
-                interactive: false,
-                keyboard: false
-            });
-
-            label.addTo(uptLabelGroup);
-        }
 
         function loadGarpan() {
             if (garpanLoaded) return;
@@ -454,13 +432,11 @@
                                 )
                             );
 
-                            addUPTLabel(layer, name, type);
                         }
                     });
 
                     uptGroup.addLayer(uptLayer);
                     uptGroup.addTo(map);
-                    uptLabelGroup.addTo(map);
                 })
                 .catch(error => {
                     console.error(error);
@@ -499,16 +475,12 @@
 
             if (event.layer === uptGroup) {
                 loadUPT();
-                uptLabelGroup.addTo(map);
             }
         });
 
         map.on("overlayremove", event => {
             if (event.layer === uptGroup) {
                 /* Label ikut disembunyikan saat wilayah UPT dimatikan. */
-                if (map.hasLayer(uptLabelGroup)) {
-                    map.removeLayer(uptLabelGroup);
-                }
             }
         });
 
@@ -660,12 +632,12 @@
 
                     <div class="legend-row">
                         <span class="legend-symbol point-stasiun"></span>
-                        <span>Titik Stasiun PSDKP</span>
+                        <span>Titik / warna Stasiun PSDKP</span>
                     </div>
 
                     <div class="legend-row">
                         <span class="legend-symbol point-pangkalan"></span>
-                        <span>Titik Pangkalan PSDKP</span>
+                        <span>Titik / warna Pangkalan PSDKP</span>
                     </div>
 
                     <div class="legend-row">
